@@ -14,9 +14,7 @@ ENV FROM_IMAGE=${FROM_IMAGE}
 # We purposefully want those managed independently, as we want docker
 # to manage its own cache.  This is just for pip, models, etc.
 ARG http_proxy
-ENV http_proxy=${http_proxy}
 ARG https_proxy
-ENV https_proxy=${https_proxy}
 RUN if [ -n "$http_proxy" ] ; then \
     echo quit \
     | openssl s_client -proxy $(echo ${https_proxy} | cut -b 8-) -servername google.com -connect google.com:443 -showcerts \
@@ -24,14 +22,12 @@ RUN if [ -n "$http_proxy" ] ; then \
     > /usr/local/share/ca-certificates/squid-self-signed.crt ; \
     update-ca-certificates ; \
   fi
-ENV REQUESTS_CA_BUNDLE=${http_proxy:+/usr/local/share/ca-certificates/squid-self-signed.crt}
+ARG REQUESTS_CA_BUNDLE=${http_proxy:+/usr/local/share/ca-certificates/squid-self-signed.crt}
 
-ENV DEBIAN_FRONTEND=noninteractive
+ARG DEBIAN_FRONTEND=noninteractive
 #RUN apt-get install gnupg2
 #RUN apt-key adv --keyserver keyserver.ubuntu.com --recv-keys A4B469963BF863CC
 RUN apt-get update
-RUN apt-get install -yqq git
-RUN apt-get install -yqq zstd
 
 RUN conda update -n base -c defaults conda
 # We need python 3.9 or 3.10 for xformers
@@ -45,6 +41,7 @@ RUN conda install xformers -c xformers/label/dev
 # Install latest pip (w/o proxy)
 RUN https_proxy="" REQUESTS_CA_BUNDLE="" conda install pip
 
-# Don't think these carry over but too lazy to check
-ENV http_proxy=""
-ENV https_proxy=""
+RUN apt-get install -yq apt-utils
+RUN apt-get install -yqq git
+RUN apt-get install -yqq zstd
+RUN apt-get install -yqq git-lfs
